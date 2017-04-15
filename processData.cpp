@@ -79,7 +79,7 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 			p = p->pNext;
 			swapList.removeHead();
 		}
-		cout << swapList.getSize() << endl;
+		a[1]->traverseNLR(swapLatLong);
 	}
 	//cout << *(BusInfo_t*)(pGData) << endl;
 	//1AXXYXXXXX Y_lat Delta_lat
