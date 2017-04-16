@@ -67,19 +67,46 @@ void swapLatLong(BusInfo_t &bus){
 bool isPass(double &X, double &Y, double &delta){
 	return (Y - delta <= X && Y + delta >= X);
 }
-bool intervalVisit(double &a, double &b, AVLNode<BusInfo_t>* &root)
+//1A - 1B
+bool intervalVisit(char *id,double &min, double &max, AVLNode<BusInfo_t>* &root)
 {
 	if (root == NULL) return false;
-	if (root->data.latitude >= a && root->data.latitude <= b){
+	if (root->data.latitude >= min && root->data.latitude <= max){
+		if (root->data==id)
 		return true;
-		//intervalVisit(a, b, root->left);
-		//intervalVisit(a, b, root->right);
+		if(intervalVisit(id,min,max,root->left))return true;
+		else return intervalVisit(id, min, max, root->right);
 	}
-	else if (root->data.latitude < a) return intervalVisit(a, b, root->right);
-	else return intervalVisit(a, b, root->left);
+	else if (root->data.latitude < min) return intervalVisit(id,min, max, root->right);
+	else return intervalVisit(id,min, max, root->left);
 }
+//2A - 2B
+int countPassingTimes(char *id, double &min, double &max, AVLNode<BusInfo_t>*root){
+	if (root == NULL) return 0;
+	if (root->data.latitude >= min && root->data.latitude <= max){
+		if (root->data == id) return 1 + countPassingTimes(id, min, max, root->left) + countPassingTimes(id, min, max, root->right);
+		else return countPassingTimes(id, min, max, root->left) + countPassingTimes(id, min, max, root->right);
+	}
+	else if (root->data.latitude < min) return countPassingTimes(id, min, max, root->right);
+	else return countPassingTimes(id, min, max, root->left);
+}
+//3
+int countPassingTimes(char*id, double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
+	if (root == NULL) return 0;
+	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max){
+		if (root->data == id && root->data.longitude >= long_min && root->data.longitude <= long_max)
+			return 1 + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->right);
+		else return countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->right);
+	}
+	else if (root->data.latitude < lat_min) return countPassingTimes(id,lat_min, lat_max,long_min,long_max,root->right);
+	else return countPassingTimes(id, lat_min, lat_max,long_min,long_max, root->left);
+}
+/***********  Prototype  **********/
+void display(L1List<BusInfo_t>& bList);
+
+
 bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
-	/*************************THIS IS THE 2AVLTREE - myTree[0] save depend latlatide, other is longtitude******************/
+	/************************* THIS IS THE 2AVLTREE - myTree[0] save depend latlatide, other is longtitude ******************/
 	AVLTree<BusInfo_t> **myTree = (AVLTree<BusInfo_t>**)pGData;
 	if (myTree[0]->getRoot() == NULL){
 		L1Item<BusInfo_t> *p = bList.getHead();
@@ -110,19 +137,30 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 				   if (event.code[1] == 'A'){
 					   AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
 					   getID(busID, 2, event.code);
-					   if (!bList.find(busID)) cout << "Failed" << endl;
-					   else{
-						   if (event.params[0] == NULL || event.params[1] == NULL) return false;
+					  /* if (!bList.find(busID)) cout << "Failed" << endl;
+					   else{*/
+						  // if (event.params[0] == NULL || event.params[1] == NULL) return false;
 						   double x_lat = event.params[0];
-						   double a = x_lat - event.params[1];
-						   double b = x_lat + event.params[1];
-						   if (intervalVisit(a, b, pR)) cout << "Succeed" << endl;
+						   double min = event.params[0] - event.params[1];
+						   double max = event.params[0] + event.params[1];
+						   if (intervalVisit(busID,min, max, pR)) cout << "Succeed" << endl;
 						   else cout << "Failed" << endl;
-					   }
+					   //}
 					   return true;
 				   }
 				   else if (event.code[1] == 'B'){
-					   cout << "1B" << endl;
+					   AVLNode<BusInfo_t> *pR = myTree[1]->getRoot();  //long
+					   getID(busID, 2, event.code);
+					  // if (!bList.find(busID)) cout << "Failed" << endl;
+					  // else{
+						  // if (event.params[0] == NULL || event.params[1] == NULL) return false;
+						   double x_lat = event.params[0];
+						   double min = event.params[0] - event.params[1];
+						   double max = event.params[0] + event.params[1];
+						   if (intervalVisit(busID,min, max, pR)) cout << "Succeed" << endl;
+						   else cout << "Failed" << endl;
+					   //}
+					   return true;
 				   }
 				   else return false;
 				   return true;
@@ -130,18 +168,33 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 	case ('2') :
 	{
 				   if (event.code[1] == 'A'){
-					   cout << "2A" << endl;
-				   }
+					   getID(busID, 2, event.code);
+						   AVLNode<BusInfo_t> *pRoot = myTree[0]->getRoot();
+						   double min = event.params[0] - event.params[1];
+						   double max = event.params[0] + event.params[1];
+						   cout << countPassingTimes(busID, min, max, pRoot) << endl;//TODO: check wheather cout Failed
+					   }
 				   else if (event.code[1] == 'B'){
-					   cout << "2B" << endl;
+					   getID(busID, 2, event.code);
+					   AVLNode<BusInfo_t> *pRoot = myTree[1]->getRoot();
+					   double min = event.params[0] - event.params[1];
+					   double max = event.params[0] + event.params[1];
+					   cout << countPassingTimes(busID, min, max, pRoot) << endl;//TODO: check wheather cout Failed * if(!countPassing) if(find) cout<<0 else cout Failed 
 				   }
 				   else return false;
 				   return true;
 	}
 	case('3') : 
 	{
-				  cout << "3" << endl;
-					return true;
+				  getID(busID,1,event.code);
+				  double lat_max, lat_min, long_max, long_min;
+				  lat_max = event.params[0] + event.params[2];
+				  lat_min = event.params[0] - event.params[2];
+				  long_max = event.params[1] + event.params[3];
+				  long_min = event.params[1] - event.params[3];
+				  AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
+				  cout << countPassingTimes(busID, lat_min, lat_max, long_min, long_max, pR)<<endl;
+				  return true;
 	}
 	case('4') :
 	{
