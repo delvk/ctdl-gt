@@ -43,6 +43,8 @@ inline bool operator <= (BusInfo_t& lhs, BusInfo_t& rhs){
 	return (lhs.latitude <= rhs.latitude);
 }
 bool initBusGlobalData(void** pGData) {
+	// TODO: allocate and initialize global data
+	// return false if failed
 	AVLTree<BusInfo_t> **a = new AVLTree<BusInfo_t>*();
 	a[0] = new AVLTree<BusInfo_t>();
 	a[1] = new AVLTree<BusInfo_t>();
@@ -63,9 +65,6 @@ void swapLatLong(BusInfo_t &bus){
 	double temp = bus.latitude;
 	bus.latitude = bus.longitude;
 	bus.longitude = temp;
-}
-bool isPass(double &X, double &Y, double &delta){
-	return (Y - delta <= X && Y + delta >= X);
 }
 //1A - 1B
 bool intervalVisit(char *id,double &min, double &max, AVLNode<BusInfo_t>* &root)
@@ -91,20 +90,72 @@ int countPassingTimes(char *id, double &min, double &max, AVLNode<BusInfo_t>*roo
 	else return countPassingTimes(id, min, max, root->left);
 }
 //3
-int countPassingTimes(char*id, double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
+int countPassingTimes(char*id,bool &isFound, double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
+	if (root == NULL) return 0;
+	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max){
+		if (root->data == id && root->data.longitude >= long_min && root->data.longitude <= long_max){
+			isFound = true;
+			return 1 + countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
+	}
+		else return countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
+	}
+	else if (root->data.latitude < lat_min) return countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
+	else return countPassingTimes(id, isFound, lat_min, lat_max, long_min, long_max, root->left);
+}
+//4
+void pushToList(double &lat_min, double &lat_max, double &long_min, double &long_max,AVLNode<BusInfo_t> *root, L1List<BusInfo_t> &List){
+	if (root == NULL) return;
+	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max) {
+		List.push_back(root->data);
+		pushToList(lat_min, lat_max, long_min, long_max,root->right,List);
+		pushToList(lat_min, lat_max, long_min, long_max,root->left,List);
+	}
+	else if (root->data.latitude < lat_min) return pushToList(lat_min, lat_max, long_min, long_max, root->right,List);
+	else return pushToList(lat_min, lat_max, long_min, long_max, root->left,List);
+}
+int numOfBusThrough(double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
+	L1List<BusInfo_t> List;
+	pushToList(lat_min, lat_max, long_min, long_max, root, List);
+	return List.count_dis();
+}
+//5
+int numOfThrough(double &lat_min,double &lat_max,double &long_min,double &long_max, AVLNode<BusInfo_t>*root){
+	if (root == NULL) return 0;
+	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max){
+		if (root->data.longitude >= long_min, root->data.longitude <= long_max)
+		return 1 + numOfThrough(lat_min, lat_max, long_min, long_max, root->left) + numOfBusThrough(lat_min, lat_max, long_min, long_max, root->right);
+		else return numOfThrough(lat_min, lat_max, long_min, long_max, root->left) + numOfBusThrough(lat_min, lat_max, long_min, long_max, root->right);
+	}
+	else if (root->data.latitude < lat_min) return numOfThrough(lat_min, lat_max, long_min, long_max, root->right);
+	else return numOfThrough(lat_min, lat_max, long_min, long_max, root->left);
+}
+//6
+bool isPass(char *id,double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
+	if (root == NULL)return false;
+	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max){
+		if (root->data == id && root->data.longitude >= long_min && root->data.longitude <= long_max)
+			return true;
+		else return isPass(id, lat_min, lat_max, long_min, long_max, root->left) || isPass(id, lat_min, lat_max, long_min, long_max, root->right);
+	}
+	else if (root->data.latitude < lat_min) return isPass(id, lat_min, lat_max, long_min, long_max, root->right);
+	else return isPass(id, lat_min, lat_max, long_min, long_max, root->right);
+}
+//7
+int passingRecord(char *id, bool &isFound, double &lat_min, double &lat_max, double &long_min, double &long_max, AVLNode<BusInfo_t>*root){
 	if (root == NULL) return 0;
 	if (root->data.latitude >= lat_min && root->data.latitude <= lat_max){
 		if (root->data == id && root->data.longitude >= long_min && root->data.longitude <= long_max)
-			return 1 + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->right);
-		else return countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->left) + countPassingTimes(id, lat_min, lat_max, long_min, long_max, root->right);
+		{
+			isFound = true;
+			return 1 + passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->left) + passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
+		}
+		else return passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->left) + passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
 	}
-	else if (root->data.latitude < lat_min) return countPassingTimes(id,lat_min, lat_max,long_min,long_max,root->right);
-	else return countPassingTimes(id, lat_min, lat_max,long_min,long_max, root->left);
+	else if (root->data.latitude < lat_min) return passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->right);
+	else return passingRecord(id, isFound, lat_min, lat_max, long_min, long_max, root->left);
 }
 /***********  Prototype  **********/
 void display(L1List<BusInfo_t>& bList);
-
-
 bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 	/************************* THIS IS THE 2AVLTREE - myTree[0] save depend latlatide, other is longtitude ******************/
 	AVLTree<BusInfo_t> **myTree = (AVLTree<BusInfo_t>**)pGData;
@@ -116,9 +167,9 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 			swapList.push_back(p->data);
 			p = p->pNext;
 		}
-		swapList.traverse(swapLatLong);
 		p = swapList.getHead();
 		while (p){
+			swapLatLong(p->data);// Swap
 			myTree[1]->insert(p->data);
 			p = p->pNext;
 			swapList.removeHead();
@@ -129,7 +180,6 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 	//1AXXYXXXXX Y_lat Delta_lat
 	cout << event.code << ": ";
 	char busID[ID_MAX_LENGTH];
-	BusInfo_t temp;
 	switch (event.code[0])
 	{
 	case ('1') :
@@ -193,30 +243,64 @@ bool processEvent(busEvent_t& event, L1List<BusInfo_t>& bList, void* pGData) {
 				  long_max = event.params[1] + event.params[3];
 				  long_min = event.params[1] - event.params[3];
 				  AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
-				  cout << countPassingTimes(busID, lat_min, lat_max, long_min, long_max, pR)<<endl;
+				  bool found = false;
+				  int n = countPassingTimes(busID, found, lat_min, lat_max, long_min, long_max, pR);
+				  if (found) cout << n << endl;
+				  else cout << "Failed"<<endl;//TODO: check wheather cout Failed
 				  return true;
 	}
-	case('4') :
+	case('4') :///SO LUONG PHUONG TIEN
 	{
-				  cout << "4" << endl;
+				   double lat_max, lat_min, long_max, long_min;
+				   lat_max = event.params[0] + event.params[2];
+				   lat_min = event.params[0] - event.params[2];
+				   long_max = event.params[1] + event.params[3];
+				   long_min = event.params[1] - event.params[3];
+				   AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
+				   cout << numOfBusThrough(lat_min, lat_max, long_min, long_max, pR) << endl;
 				  return true;
 
 	}
 	case('5') :
 	{
-				  cout << "5" << endl;
+				  getID(busID, 1, event.code);
+				  double lat_max, lat_min, long_max, long_min;
+				  lat_max = event.params[0] + event.params[2];
+				  lat_min = event.params[0] - event.params[2];
+				  long_max = event.params[1] + event.params[3];
+				  long_min = event.params[1] - event.params[3];
+				  AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
+				  cout << numOfThrough(lat_min, lat_max, long_min, long_max, pR) << endl;
 				  return true;
 
 	}
 	case('6') :
 	{
-				  cout << "6" << endl;
+				  getID(busID, 1, event.code);
+				  double lat_max, lat_min, long_max, long_min;
+				  lat_max = event.params[0] + event.params[2];
+				  lat_min = event.params[0] - event.params[2];
+				  long_max = event.params[1] + event.params[3];
+				  long_min = event.params[1] - event.params[3];
+				  AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
+				  if (isPass(busID, lat_min, lat_max, long_min, long_max, pR))cout << "Succeed" << endl;
+				  else cout << "Failed" << endl;
 				  return true;
 
 	}
 	case('7') :
 	{
-				  cout << "7" << endl;
+				  getID(busID, 1, event.code);
+				  double lat_max, lat_min, long_max, long_min;
+				  lat_max = event.params[0] + event.params[2];
+				  lat_min = event.params[0] - event.params[2];
+				  long_max = event.params[1] + event.params[3];
+				  long_min = event.params[1] - event.params[3];
+				  AVLNode<BusInfo_t> *pR = myTree[0]->getRoot();
+				  bool found = false;
+				  int n = passingRecord(busID, found, lat_min, lat_max, long_min, long_max, pR);
+				  if (found) cout << n << endl;
+				  else cout <<"Failed" << endl;
 				  return true;
 
 	}
