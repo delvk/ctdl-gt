@@ -1,27 +1,7 @@
-Sạc pin 18650
+Event 4: Change type char* to save in list.
 
-Board L298P
+edit find return false when pHead NuLL
 
-Trụ đồng 1cm : 10 Cái
-
-diode M7
-
-Động cơ vàng
-
-Bánh xe vàng
-
-Pin 18650
-
-Đế Pin 18650
-
-Bánh mắt trâu
-
-Quang trở
-
-Dây bus
-
-L298P SMD
-
-Domino
-
-Nút nhấn
+update code: 
+if(!find(p->data)) push_back(p->data.id)
+return size List
