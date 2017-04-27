@@ -59,11 +59,7 @@ void write(double *heso, double &saiso, double *bieudo){
 }
 
 double *giatridubao(int size, double *params, data *TRN){
-	//y=a*x+b
-	//x->0 t->1
-
 	int STOP_NUM = (int)params[0];
-	//double *y = new double[STOP_NUM];
 	double gA, gB, a, b, alpha;
 	a = params[2]; b = params[3]; alpha = params[1];
 	int i = 0;
@@ -74,8 +70,9 @@ double *giatridubao(int size, double *params, data *TRN){
 			gA += (a*TRN[j].x + b - TRN[j].t)*TRN[j].x;//ga
 			gB += a*TRN[j].x + b - TRN[j].t;//gb
 		}
-		gA = gA / labs(gA + gB);
-		gB = gB / labs(gA + gB);
+		double g = sqrt(gA*gA + gB*gB);
+		gA /= g;
+		gB /= g;
 		a -= alpha*gA;
 		b -= alpha*gB;
 		i++;
@@ -84,53 +81,53 @@ double *giatridubao(int size, double *params, data *TRN){
 	heso[0] = a; heso[1] = b;
 	return heso;
 }
-double saisoTB(int size, double *heso, data *TST){
-	double sum = 0, temp = 0;
-	for (int i = 0; i < size; i++){
-		temp = (heso[0] * TST[i].x + heso[1] - TST[i].t);
-		sum += temp*temp;
-	}
-	return sqrt(sum / size);
-}
 double *mangbieudien(int D, double *e, double max, double min){
-	double *m = new double[KHOANG_CACH];
+	double m[KHOANG_CACH];
 	int i = 0;// 1 2 3 4 5 6 7 8 9 0
-	for (int j = 0; j < KHOANG_CACH; j++) m[j] = 0;
-	double width = max / min;
-	while (i < D){
-		if (min <= e[i] && e[i] < min + width) m[0]++;
-		else if (min + width <= e[i] && e[i] < 2 * width) m[1]++;
-		else if (min + 2 * width <= e[i] && e[i] < min + 3 * width) m[2]++;
-		else if (min + 3 * width <= e[i] && e[i] < min + 4 * width) m[3]++;
-		else if (min + 4 * width <= e[i] && e[i] < min + 5 * width) m[4]++;
-		else if (min + 5 * width <= e[i] && e[i] < min + 6 * width) m[5]++;
-		else if (min + 6 * width <= e[i] && e[i] < min + 7 * width) m[6]++;
-		else if (min + 7 * width <= e[i] && e[i] < min + 8 * width) m[7]++;
-		else if (min + 8 * width <= e[i] && e[i] < min + 9 * width) m[8]++;
-		else if (min + 9 * width <= e[i] && e[i] <= max) m[9]++;
-		i++;
+	double width = (max - min) / 10;
+	for (int k = 0; k < KHOANG_CACH; k++) m[k] = min + k*width;
+	double *NL = new double[KHOANG_CACH];
+	int NL_sum = 0;
+	for (int i = 0; i <= 9; i++){
+		NL[i] = 0;
+		if (i < 9){
+			for (int j = 0; j < D; j++){
+				if (e[j] >= m[i] && e[j] < m[i + 1]){
+					NL[i]++;
+					NL_sum++;
+				}
+			}
+		}
+		else {
+			for (int j = 0; j < D; j++){
+				if (e[j] >= m[i] && e[j] <= m[i + 1]){
+					NL[i]++;
+					NL_sum++;
+				}
+			}
+		}
 	}
-	double sum = 0;
-	for (int j = 0; j < KHOANG_CACH; j++){
-		sum += m[j];
-	}
-	for (int j = 0; j < KHOANG_CACH; j++) m[j] = m[j] / sum;
-	return m;
+	for (int z = 0; z < KHOANG_CACH; z++) NL[z] = NL[z] / (double)NL_sum;
+	return NL;
 }
-double *bieudotansuat(int size, double *params, double *heso, data *TST){
+double *bieudotansuat(int size, double *params, double *heso, data *TST, double &Ermsd){
 	double *e = new double[size];
 	double dhrA, dhrB, a, b, alpha;
 	double __e = 0, phi = 0;
+	Ermsd = 0;
 	a = heso[0]; b = heso[1]; alpha = params[1];
 	for (int j = 0; j < size; j++) {
 		e[j] = a * TST[j].x + b - TST[j].t;
 		__e += e[j];
+		Ermsd += e[j] * e[j];
 	}
-	__e /= size;//e trung binh
-	for (int i = 0; i < size; i++)
-		phi += pow(e[i] - __e, 2);
-	phi /= size;
-	phi = sqrt(phi);
+	Ermsd = sqrt(Ermsd / (double)size);
+	__e /= (double)size;//e trung binh
+	for (int i = 0; i < size; i++){
+		double p = e[i] - __e;
+		phi += p*p;
+	}
+	phi = sqrt(phi / (double)(size));//
 	double V_min = __e - 3 * phi;
 	double V_max = __e + 3 * phi;
 	double *mang = mangbieudien(size, e, V_max, V_min);
@@ -177,8 +174,8 @@ int main(){
 				}
 			}
 			heso = giatridubao(M - D, params, TRN);//step2
-			double ssTB = saisoTB(D, heso, TST);//step 3
-			double *mang = bieudotansuat(D, params, heso, TST);
+			double ssTB;//step 3
+			double *mang = bieudotansuat(D, params, heso, TST,ssTB);
 			write(heso, ssTB, mang);
 			//cout << fixed << right << setprecision(5);
 			//cout << "--------------------------------------------------------------" << endl;
@@ -208,8 +205,8 @@ int main(){
 				TST[z++] = dataIn[j++];
 			}
 			heso = giatridubao(M - temp, params, TRN);//step2
-			double ssTB = saisoTB(temp, heso, TST);//step 3
-			double *mang = bieudotansuat(temp, params, heso, TST);
+			double ssTB;//step 3
+			double *mang = bieudotansuat(temp, params, heso, TST,ssTB);
 			cout << fixed << right << setprecision(5);
 			cout << heso[0] << setw(10) << heso[1] << setw(10) << ssTB;
 			for (int t = 0; t < KHOANG_CACH; t++)cout << setw(10) << mang[i];
