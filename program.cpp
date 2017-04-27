@@ -30,14 +30,11 @@ void loadData(double *params, data *dataIn, int &simples_num){
 	int temp = 0;
 	simples_num = 0;
 	while (getline(cin, str)){
-
-		//skip ---: read form file or console
-
 		if (n>2 && n<8){
 			stringstream scin1(str);
 			scin1 >> str_value;
 			scin1 >> params[temp++];
-		}//get a parameter
+		}
 		else if (n>10){
 			stringstream scin1(str);
 			scin1 >> dataIn[simples_num].x;
@@ -83,32 +80,26 @@ double *giatridubao(int size, double *params, data *TRN){
 }
 double *mangbieudien(int D, double *e, double max, double min){
 	double m[KHOANG_CACH];
-	int i = 0;// 1 2 3 4 5 6 7 8 9 0
 	double width = (max - min) / 10;
-	for (int k = 0; k < KHOANG_CACH; k++) m[k] = min + k*width;
-	double *NL = new double[KHOANG_CACH];
-	int NL_sum = 0;
-	for (int i = 0; i <= 9; i++){
-		NL[i] = 0;
-		if (i < 9){
-			for (int j = 0; j < D; j++){
-				if (e[j] >= m[i] && e[j] < m[i + 1]){
-					NL[i]++;
-					NL_sum++;
-				}
-			}
-		}
-		else {
-			for (int j = 0; j < D; j++){
-				if (e[j] >= m[i] && e[j] <= m[i + 1]){
-					NL[i]++;
-					NL_sum++;
-				}
-			}
-		}
+	for (int k = 1; k < KHOANG_CACH; k++) m[k] = min + k*width;
+	double *soloi = new double[KHOANG_CACH];
+	for (int z = 0; z < KHOANG_CACH; z++)soloi[z] = 0;
+	int tongsoloi = 0;
+	for (int i = 0; i < D; i++){
+		if (e[i] >= min && e[i] < m[1]) soloi[0]++;
+		else if (e[i] >= m[1] && e[i] < m[2]) soloi[1]++;
+		else if (e[i] >= m[2] && e[i] < m[3]) soloi[2]++;
+		else if (e[i] >= m[3] && e[i] < m[4]) soloi[3]++;
+		else if (e[i] >= m[4] && e[i] < m[5]) soloi[4]++;
+		else if (e[i] >= m[5] && e[i] < m[6]) soloi[5]++;
+		else if (e[i] >= m[6] && e[i] < m[7]) soloi[6]++;
+		else if (e[i] >= m[7] && e[i] < m[8]) soloi[7]++;
+		else if (e[i] >= m[8] && e[i] < m[9]) soloi[8]++;
+		else if (e[i] >= m[9] && e[i] <= max) soloi[9]++;
 	}
-	for (int z = 0; z < KHOANG_CACH; z++) NL[z] = NL[z] / (double)NL_sum;
-	return NL;
+	for (int z = 0; z < KHOANG_CACH; z++)tongsoloi += soloi[z];
+	for (int z = 0; z < KHOANG_CACH; z++) soloi[z] /= (double)tongsoloi;
+	return soloi;
 }
 double *bieudotansuat(int size, double *params, double *heso, data *TST, double &Ermsd){
 	double *e = new double[size];
@@ -136,25 +127,13 @@ double *bieudotansuat(int size, double *params, double *heso, data *TST, double 
 
 int main(){
 	double params[PARAMS_SIZE];
-	data *dataIn = new data[NUM_SIMPLES];//MAU DU LIEU DUOC LUU O DAY
+	data *dataIn = new data[NUM_SIMPLES];
 	int M = 0;
 	cout << fixed << right << setprecision(5);
 	loadData(params, dataIn, M);
-	/*ofstream outputFile;
-	initalOutput(outputFile);*/
-	//cout << "Danh sach tham so dau vao: " << endl;
-	//for (int i = 0; i < PARAMS_SIZE; i++) cout << params[i] << endl;
-	//cout << "--------------------------------------------------------------" << endl;
-	//cout << "Danh sach mau so lieu:" << endl;
-	//displayData(dataIn,M);
-	//cout << "--------------------------------------------------------------" << endl;
 	int K = (int)params[4];
 	int D = M / K;
 	int temp = D + M%K;
-	/*cout << "Tong mau (M): " << M << endl;
-	cout << "So ngan(K): " << K << endl;
-	cout << "Du lieu moi ngan: " << D << endl;
-	cout << "Ngan cuoi co: " << temp << endl;*/
 	double *heso;
 	//step1
 	for (int i = 1; i <= K; i++){
@@ -209,7 +188,7 @@ int main(){
 			double *mang = bieudotansuat(temp, params, heso, TST,ssTB);
 			cout << fixed << right << setprecision(5);
 			cout << heso[0] << setw(10) << heso[1] << setw(10) << ssTB;
-			for (int t = 0; t < KHOANG_CACH; t++)cout << setw(10) << mang[i];
+			for (int t = 0; t < KHOANG_CACH; t++)cout << setw(10) << mang[t];
 			//cout << fixed << right << setprecision(5);
 			//cout << "--------------------------------------------------------------" << endl;
 			//cout << "Lan " << i << endl;
