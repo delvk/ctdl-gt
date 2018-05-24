@@ -1,4 +1,9 @@
 heloo anh, hihihihi
 sua laij ti co dc ko
 dfdf
+<<<<<<< HEAD
 cai nay trong branch master
+=======
+hehehe
+cai nay trong branch pc ne pa
+>>>>>>> branch_from_PC
