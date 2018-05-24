@@ -1,3 +1,3 @@
 today
 git basic (clone,status, add, commit, rm, log, checkout, fetch, push, pull, remote, tag)
-git branch (branch, checkout
+git branch (branch, checkout, 
