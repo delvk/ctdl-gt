@@ -1,1 +1,5 @@
+<<<<<<< .merge_file_a12820
 issu1 -- file 1
+=======
+nhanh1 -- newfile1
+>>>>>>> .merge_file_a02268

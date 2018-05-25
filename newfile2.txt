@@ -1,1 +1,5 @@
+<<<<<<< .merge_file_a01196
 issue1 -- new file 2
+=======
+nhanh2 -- newfile2
+>>>>>>> .merge_file_a07900
