@@ -1,6 +1,1 @@
-<<<<<<< 
-pc -- hello from pc
-=======
-
-web -- hello from web
->>>>>>> 8f4d0b04eb2c5da91e819a0157ca6cf13d4e2ef1
+Khong chap nhan, sua cai quai gi vay
